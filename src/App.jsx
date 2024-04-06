@@ -5,15 +5,22 @@ import Modal from "./components/Modal.jsx";
 import DeleteConfirmation from "./components/DeleteConfirmation.jsx";
 import logoImg from "./assets/logo.png";
 import { sortPlacesByDistance } from "./loc.js";
+
+const storeIds = JSON.parse(localStorage.getItem("selectedPlaces")) || [];
+const storedPlaces = storeIds.map((id) =>{
+ return AVAILABLE_PLACES.find((place) => id === place.id)
+}
+);
 function App() {
+  
   const modal = useRef();
   const selectedPlace = useRef();
-  const [pickedPlaces, setPickedPlaces] = useState([]);
+  const [pickedPlaces, setPickedPlaces] = useState(storedPlaces);
   const [availablePlaces, setAvailablePlaces] = useState([]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((position) => {
-      console.log(position)
+      console.log(position);
       const sortedPlaces = sortPlacesByDistance(
         AVAILABLE_PLACES,
         position.coords.latitude,
@@ -21,11 +28,12 @@ function App() {
       );
       setAvailablePlaces(sortedPlaces);
     });
-  },[]);
+  }, []);
 
   function handleStartRemovePlace(id) {
     modal.current.open();
     selectedPlace.current = id;
+    console.log(selectedPlace);
   }
 
   function handleStopRemovePlace() {
@@ -34,12 +42,17 @@ function App() {
 
   function handleSelectPlace(id) {
     setPickedPlaces((prevPickedPlaces) => {
+      console.log(prevPickedPlaces);
       if (prevPickedPlaces.some((place) => place.id === id)) {
         return prevPickedPlaces;
       }
       const place = AVAILABLE_PLACES.find((place) => place.id === id);
       return [place, ...prevPickedPlaces];
     });
+    const storedId = JSON.parse(localStorage.getItem("selectedPlaces")) || [];
+    if (storedId.indexOf(id) === -1) {
+      localStorage.setItem("selectedPlaces", JSON.stringify([id, ...storedId]));
+    }
   }
 
   function handleRemovePlace() {
@@ -47,6 +60,12 @@ function App() {
       prevPickedPlaces.filter((place) => place.id !== selectedPlace.current)
     );
     modal.current.close();
+
+    const storedId = JSON.parse(localStorage.getItem("selectedPlaces")) || [];
+    localStorage.setItem(
+      "selectedPlaces",
+      JSON.stringify(storedId.filter((id) => id !== selectedPlace.current))
+    );
   }
 
   return (
